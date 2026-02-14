@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { 
-  Paper, Typography, Box, List, ListItem, ListItemText, 
-  IconButton, Grid, useTheme, Divider, Popover, Link
+  Paper, Typography, Box, List, ListItem, ListItemText, ListItemButton,
+  IconButton, Grid, useTheme, Divider, Popover, Link, ButtonBase
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -202,28 +202,49 @@ export default function CalendarView() {
               const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
               const isTodayDate = isToday(day);
               
-              return (
-                <Grid key={idx} size={12/7} sx={{ display: 'flex', justifyContent: 'center' }}>
-                  <Box
-                    onClick={() => setSelectedDate(day)}
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: "50%", // Fully circular selection
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      position: "relative",
-                      transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
-                      bgcolor: isSelected ? "primary.main" : "transparent",
-                      color: isSelected ? "white" : isCurrentMonth ? "text.primary" : "text.disabled",
-                      "&:hover": {
-                        bgcolor: isSelected ? "primary.main" : "rgba(0,0,0,0.04)"
-                      }
-                    }}
-                  >
+                          return (
+              
+                            <Grid key={idx} size={12/7} sx={{ display: 'flex', justifyContent: 'center' }}>
+              
+                              <ButtonBase
+              
+                                onClick={() => setSelectedDate(day)}
+              
+                                sx={{
+              
+                                  width: 48,
+              
+                                  height: 48,
+              
+                                  borderRadius: "50%", // Fully circular selection
+              
+                                  display: "flex",
+              
+                                  flexDirection: "column",
+              
+                                  alignItems: "center",
+              
+                                  justifyContent: "center",
+              
+                                  position: "relative",
+              
+                                  transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+              
+                                  bgcolor: isSelected ? "primary.main" : "transparent",
+              
+                                  color: isSelected ? "white" : isCurrentMonth ? "text.primary" : "text.disabled",
+              
+                                  "&:hover": {
+              
+                                    bgcolor: isSelected ? "primary.main" : "rgba(0,0,0,0.04)"
+              
+                                  }
+              
+                                }}
+              
+                              >
+              
+              
                     <Typography 
                       variant="body2" 
                       fontWeight={isSelected || isTodayDate ? "700" : "500"}
@@ -248,13 +269,14 @@ export default function CalendarView() {
                           width: 4, 
                           height: 4, 
                           borderRadius: "50%", 
-                          bgcolor: isSelected ? "white" : getEventColor(event),
-                          opacity: isSelected ? 0.9 : 1
-                        }} />
-                      ))}
-                    </Box>
-                  </Box>
-                </Grid>
+                                                  bgcolor: isSelected ? "white" : getEventColor(event),
+                                                  opacity: isSelected ? 0.9 : 1
+                                                }} />
+                                              ))}
+                                            </Box>
+                                          </ButtonBase>
+                                        </Grid>
+                          
               );
             })}
           </Grid>
@@ -302,44 +324,46 @@ export default function CalendarView() {
 
                 return (
                   <ListItem 
-                    button
-                    onClick={(e) => handleEventClick(event, e.currentTarget)}
                     key={event.id + idx}
-                    sx={{ 
-                      mb: 1.5, 
-                      bgcolor: "white", 
-                      borderRadius: 1, // Standardized squircle (24px)
-                      boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
-                      border: "1px solid rgba(0,0,0,0.02)",
-                      p: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      minHeight: 72,
-                      cursor: "pointer",
-                      "&:hover": { bgcolor: "#f9f9f9" }
-                    }}
+                    disablePadding
+                    sx={{ mb: 1.5 }}
                   >
-                    {/* Floating colored pill */}
-                    <Box sx={{ 
-                      width: 6, 
-                      height: 40, 
-                      borderRadius: 4, 
-                      bgcolor: accentColor,
-                      mr: 2.5,
-                      flexShrink: 0
-                    }} />
-                    
-                    <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      <Typography variant="body1" fontWeight="700" sx={{ mb: 0.5, fontSize: "1rem", color: "#1C1C1E" }}>
-                        {event.summary}
-                      </Typography>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, color: "text.secondary" }}>
-                        <AccessTimeIcon sx={{ fontSize: 16, opacity: 0.7 }} />
-                        <Typography variant="body2" fontWeight="500" sx={{ fontSize: "0.85rem" }}>
-                          {timeLabel}
+                    <ListItemButton
+                      onClick={(e) => handleEventClick(event, e.currentTarget)}
+                      sx={{ 
+                        bgcolor: "white", 
+                        borderRadius: 1, // Standardized squircle (24px)
+                        boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
+                        border: "1px solid rgba(0,0,0,0.02)",
+                        p: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        minHeight: 72,
+                        "&:hover": { bgcolor: "#f9f9f9" }
+                      }}
+                    >
+                      {/* Floating colored pill */}
+                      <Box sx={{ 
+                        width: 6, 
+                        height: 40, 
+                        borderRadius: 4, 
+                        bgcolor: accentColor,
+                        mr: 2.5,
+                        flexShrink: 0
+                      }} />
+                      
+                      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                        <Typography variant="body1" fontWeight="700" sx={{ mb: 0.5, fontSize: "1rem", color: "#1C1C1E" }}>
+                          {event.summary}
                         </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, color: "text.secondary" }}>
+                          <AccessTimeIcon sx={{ fontSize: 16, opacity: 0.7 }} />
+                          <Typography variant="body2" fontWeight="500" sx={{ fontSize: "0.85rem" }}>
+                            {timeLabel}
+                          </Typography>
+                        </Box>
                       </Box>
-                    </Box>
+                    </ListItemButton>
                   </ListItem>
                 );
               })}

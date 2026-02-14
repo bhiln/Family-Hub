@@ -1,6 +1,6 @@
 "use client";
 
-import { AppBar, Toolbar, Typography, Avatar, Box, IconButton, Tooltip, Button, AvatarGroup, Menu, MenuItem, Divider, ListItemIcon, ListItemText } from "@mui/material";
+import { AppBar, Toolbar, Typography, Avatar, Box, IconButton, Tooltip, Button, AvatarGroup, Menu, MenuItem, Divider, ListItemIcon, ListItemText, ButtonBase } from "@mui/material";
 import { signOut, signIn } from "next-auth/react";
 import LogoutIcon from "@mui/icons-material/Logout";
 import HomeIcon from "@mui/icons-material/Home";
@@ -55,12 +55,11 @@ export default function Navbar({ session, onHide }: { session: any, onHide: () =
         </Typography>
         
         <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <Box 
+          <ButtonBase 
             onClick={handleClick}
             sx={{ 
               display: "flex", 
               alignItems: "center", 
-              cursor: "pointer",
               padding: "4px 8px",
               borderRadius: "16px", // Updated to squircle-ish
               bgcolor: "rgba(0,0,0,0.03)", // Subtle background
@@ -87,7 +86,7 @@ export default function Navbar({ session, onHide }: { session: any, onHide: () =
                 {accounts.length}
               </Typography>
             )}
-          </Box>
+          </ButtonBase>
 
           <Tooltip title="Sign Out">
             <IconButton onClick={() => signOut()} size="small" sx={{ color: "text.secondary" }}>
