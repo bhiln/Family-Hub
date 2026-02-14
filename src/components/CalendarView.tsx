@@ -3,12 +3,14 @@
 import { useEffect, useState, useMemo } from "react";
 import { 
   Paper, Typography, Box, List, ListItem, ListItemText, 
-  IconButton, Grid, useTheme, Divider 
+  IconButton, Grid, useTheme, Divider, Popover, Link
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import DescriptionIcon from "@mui/icons-material/Description";
 import { 
   format, parseISO, isSameDay, startOfMonth, endOfMonth, 
   startOfWeek, endOfWeek, eachDayOfInterval, addMonths, 
@@ -21,6 +23,10 @@ export default function CalendarView() {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  // Popover state
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -105,6 +111,18 @@ export default function CalendarView() {
     return colors[Math.abs(hash) % colors.length];
   };
 
+  const handleEventClick = (event: any, currentTarget: HTMLElement) => {
+    setSelectedEvent(event);
+    setAnchorEl(currentTarget);
+  };
+
+  const handleClosePopover = () => {
+    setAnchorEl(null);
+    setSelectedEvent(null);
+  };
+
+  const openPopover = Boolean(anchorEl);
+
   return (
     <Paper
       elevation={0}
@@ -184,40 +202,41 @@ export default function CalendarView() {
               const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
               const isTodayDate = isToday(day);
               
-                          return (
-                            <Grid key={idx} size={12/7} sx={{ display: 'flex', justifyContent: 'center' }}>
-                              <Box
-                                onClick={() => setSelectedDate(day)}
-                                sx={{
-                                  width: 48,
-                                  height: 48,
-                                  borderRadius: "50%", // Fully circular selection
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  cursor: "pointer",
-                                  position: "relative",
-                                  transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
-                                  bgcolor: isSelected ? "primary.main" : "transparent",
-                                  color: isSelected ? "white" : isCurrentMonth ? "text.primary" : "text.disabled",
-                                  "&:hover": {
-                                    bgcolor: isSelected ? "primary.main" : "rgba(0,0,0,0.04)"
-                                  }
-                                }}
-                              >
-                                <Typography 
-                                  variant="body2" 
-                                  fontWeight={isSelected || isTodayDate ? "700" : "500"}
-                                  sx={{ 
-                                    opacity: isCurrentMonth || isSelected ? 1 : 0.5,
-                                    color: isTodayDate && !isSelected ? "primary.main" : "inherit",
-                                    fontSize: "1rem"
-                                  }}
-                                >
-                                  {format(day, "d")}
-                                </Typography>
-                                  {/* Event Dots */}
+              return (
+                <Grid key={idx} size={12/7} sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <Box
+                    onClick={() => setSelectedDate(day)}
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: "50%", // Fully circular selection
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      position: "relative",
+                      transition: "all 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+                      bgcolor: isSelected ? "primary.main" : "transparent",
+                      color: isSelected ? "white" : isCurrentMonth ? "text.primary" : "text.disabled",
+                      "&:hover": {
+                        bgcolor: isSelected ? "primary.main" : "rgba(0,0,0,0.04)"
+                      }
+                    }}
+                  >
+                    <Typography 
+                      variant="body2" 
+                      fontWeight={isSelected || isTodayDate ? "700" : "500"}
+                      sx={{ 
+                        opacity: isCurrentMonth || isSelected ? 1 : 0.5,
+                        color: isTodayDate && !isSelected ? "primary.main" : "inherit",
+                        fontSize: "1rem"
+                      }}
+                    >
+                      {format(day, "d")}
+                    </Typography>
+                    
+                    {/* Event Dots */}
                     <Box sx={{ 
                       display: "flex", 
                       gap: 0.3, 
@@ -283,6 +302,8 @@ export default function CalendarView() {
 
                 return (
                   <ListItem 
+                    button
+                    onClick={(e) => handleEventClick(event, e.currentTarget)}
                     key={event.id + idx}
                     sx={{ 
                       mb: 1.5, 
@@ -293,7 +314,9 @@ export default function CalendarView() {
                       p: 2,
                       display: "flex",
                       alignItems: "center",
-                      minHeight: 72
+                      minHeight: 72,
+                      cursor: "pointer",
+                      "&:hover": { bgcolor: "#f9f9f9" }
                     }}
                   >
                     {/* Floating colored pill */}
@@ -324,6 +347,79 @@ export default function CalendarView() {
           )}
         </Box>
       </Box>
+
+      {/* Event Details Popover */}
+      <Popover
+        open={openPopover}
+        anchorEl={anchorEl}
+        onClose={handleClosePopover}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        PaperProps={{
+          sx: { width: 320, borderRadius: 1, p: 3, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }
+        }}
+      >
+        {selectedEvent && (
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+              <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: getEventColor(selectedEvent) }} />
+              <Typography variant="h6" fontWeight="700" sx={{ lineHeight: 1.2 }}>
+                {selectedEvent.summary}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              <Box sx={{ display: "flex", gap: 1.5 }}>
+                <AccessTimeIcon color="action" fontSize="small" sx={{ mt: 0.2 }} />
+                <Box>
+                  <Typography variant="body2" fontWeight="600">
+                    {selectedEvent.start?.dateTime 
+                      ? `${format(parseISO(selectedEvent.start.dateTime), "EEEE, MMMM d")}` 
+                      : "All Day"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedEvent.start?.dateTime 
+                      ? `${format(parseISO(selectedEvent.start.dateTime), "h:mm a")} - ${format(parseISO(selectedEvent.end.dateTime), "h:mm a")}` 
+                      : "All Day"}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {selectedEvent.location && (
+                <Box sx={{ display: "flex", gap: 1.5 }}>
+                  <LocationOnIcon color="action" fontSize="small" sx={{ mt: 0.2 }} />
+                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                    {selectedEvent.location}
+                  </Typography>
+                </Box>
+              )}
+
+              {selectedEvent.description && (
+                <Box sx={{ display: "flex", gap: 1.5 }}>
+                  <DescriptionIcon color="action" fontSize="small" sx={{ mt: 0.2 }} />
+                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-wrap" }}>
+                    {selectedEvent.description}
+                  </Typography>
+                </Box>
+              )}
+              
+              {selectedEvent.htmlLink && (
+                <Box sx={{ mt: 1, textAlign: "right" }}>
+                  <Link href={selectedEvent.htmlLink} target="_blank" rel="noopener" underline="hover" variant="caption" fontWeight="600">
+                    Open in Google Calendar
+                  </Link>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+      </Popover>
     </Paper>
   );
 }

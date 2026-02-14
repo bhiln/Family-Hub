@@ -6,11 +6,12 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import HomeIcon from "@mui/icons-material/Home";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { useState } from "react";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useRouter } from "next/navigation";
 
-export default function Navbar({ session }: { session: any }) {
+export default function Navbar({ session, onHide }: { session: any, onHide: () => void }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const router = useRouter();
@@ -54,16 +55,6 @@ export default function Navbar({ session }: { session: any }) {
         </Typography>
         
         <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <Button 
-            startIcon={<AddIcon />} 
-            size="small" 
-            variant="outlined"
-            onClick={() => signIn("google")}
-            sx={{ display: { xs: "none", md: "flex" }, borderRadius: 20 }}
-          >
-            Link Account
-          </Button>
-
           <Box 
             onClick={handleClick}
             sx={{ 
@@ -71,8 +62,10 @@ export default function Navbar({ session }: { session: any }) {
               alignItems: "center", 
               cursor: "pointer",
               padding: "4px 8px",
-              borderRadius: "24px",
-              "&:hover": { bgcolor: "rgba(0,0,0,0.04)" }
+              borderRadius: "16px", // Updated to squircle-ish
+              bgcolor: "rgba(0,0,0,0.03)", // Subtle background
+              transition: "all 0.2s",
+              "&:hover": { bgcolor: "rgba(0,0,0,0.06)" }
             }}
           >
             <AvatarGroup max={4} sx={{ mr: accounts.length > 1 ? 1 : 0 }}>
@@ -101,6 +94,12 @@ export default function Navbar({ session }: { session: any }) {
               <LogoutIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+
+          <Tooltip title="Hide Header">
+            <IconButton onClick={onHide} size="small" sx={{ color: "text.secondary" }}>
+              <KeyboardArrowUpIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
 
         <Menu
@@ -112,23 +111,10 @@ export default function Navbar({ session }: { session: any }) {
           PaperProps={{
             elevation: 0,
             sx: {
-              overflow: 'visible',
               filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
               mt: 1.5,
-              borderRadius: 3,
+              borderRadius: 1, // Squircle (24px)
               minWidth: 200,
-              '&:before': {
-                content: '""',
-                display: 'block',
-                position: 'absolute',
-                top: 0,
-                right: 14,
-                width: 10,
-                height: 10,
-                bgcolor: 'background.paper',
-                transform: 'translateY(-50%) rotate(45deg)',
-                zIndex: 0,
-              },
             },
           }}
         >
