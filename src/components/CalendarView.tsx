@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { 
   Paper, Typography, Box, List, ListItem, ListItemText, ListItemButton,
   IconButton, Grid, useTheme, Divider, Popover, Link, ButtonBase,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button,
+  Avatar, Chip
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -14,6 +15,12 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import DescriptionIcon from "@mui/icons-material/Description";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import PeopleIcon from "@mui/icons-material/People";
+import CloseIcon from "@mui/icons-material/Close";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import HelpIcon from "@mui/icons-material/Help";
+// ... (rest of imports)
 import { 
   format, parseISO, isSameDay, startOfMonth, endOfMonth, 
   startOfWeek, endOfWeek, eachDayOfInterval, addMonths, 
@@ -27,9 +34,9 @@ export default function CalendarView() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   
-  // Popover state
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  // Details state
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [isViewingDetails, setIsViewingDetails] = useState(false);
 
   // Create Event state
   const [isCreating, setIsCreating] = useState(false);
@@ -116,7 +123,7 @@ export default function CalendarView() {
         method: "DELETE",
       });
       if (res.ok) {
-        handleClosePopover();
+        handleCloseDetails();
         fetchEvents();
       }
     } catch (error) {
@@ -182,17 +189,24 @@ export default function CalendarView() {
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const handleEventClick = (event: any, currentTarget: HTMLElement) => {
+  const handleEventClick = (event: any) => {
     setSelectedEvent(event);
-    setAnchorEl(currentTarget);
+    setIsViewingDetails(true);
   };
 
-  const handleClosePopover = () => {
-    setAnchorEl(null);
-    setSelectedEvent(null);
+  const handleCloseDetails = () => {
+    setIsViewingDetails(false);
+    setTimeout(() => setSelectedEvent(null), 200);
   };
 
-  const openPopover = Boolean(anchorEl);
+  const getAttendeeIcon = (status: string) => {
+    switch (status) {
+      case 'accepted': return <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />;
+      case 'declined': return <CancelIcon sx={{ fontSize: 16, color: 'error.main' }} />;
+      case 'tentative': return <HelpIcon sx={{ fontSize: 16, color: 'warning.main' }} />;
+      default: return <HelpIcon sx={{ fontSize: 16, color: 'action.disabled' }} />;
+    }
+  };
 
   return (
     <Paper
@@ -426,7 +440,7 @@ export default function CalendarView() {
                     sx={{ mb: 1.5, borderRadius: 1, overflow: 'hidden' }}
                   >
                     <ListItemButton
-                      onClick={(e) => handleEventClick(event, e.currentTarget)}
+                      onClick={() => handleEventClick(event)}
                       sx={{ 
                         bgcolor: "white", 
                         borderRadius: 1, // Standardized squircle (24px)
@@ -469,117 +483,203 @@ export default function CalendarView() {
         </Box>
       </Box>
 
-      {/* Event Details Popover */}
-      <Popover
-        open={openPopover}
-        anchorEl={anchorEl}
-        onClose={handleClosePopover}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
+      {/* Event Details Dialog */}
+      <Dialog 
+        open={isViewingDetails} 
+        onClose={handleCloseDetails} 
+        fullWidth 
+        maxWidth="sm" 
+        slotProps={{
+          backdrop: {
+            sx: { backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.4)' }
+          }
         }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        PaperProps={{
-          sx: { width: 320, borderRadius: 1, p: 3, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }
+        PaperProps={{ 
+          sx: { 
+            borderRadius: 1, 
+            p: 0, 
+            boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+            overflow: 'hidden'
+          } 
         }}
       >
         {selectedEvent && (
           <Box>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: getEventColor(selectedEvent) }} />
-                <Typography variant="h6" fontWeight="700" sx={{ lineHeight: 1.2 }}>
-                  {selectedEvent.summary}
-                </Typography>
+            {/* Map Header */}
+            {selectedEvent.location && (
+              <Box sx={{ width: '100%', height: 200, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                <iframe
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}&q=${encodeURIComponent(selectedEvent.location)}`}
+                />
               </Box>
-              <IconButton size="small" onClick={handleDeleteEvent} color="error">
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Box>
+            )}
 
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              <Box sx={{ display: "flex", gap: 1.5 }}>
-                <AccessTimeIcon color="action" fontSize="small" sx={{ mt: 0.2 }} />
+            <DialogContent sx={{ p: 4 }}>
+              <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 3 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
+                  <Box sx={{ width: 16, height: 16, borderRadius: "50%", bgcolor: getEventColor(selectedEvent) }} />
+                  <Typography variant="h5" fontWeight="800" sx={{ lineHeight: 1.1 }}>
+                    {selectedEvent.summary}
+                  </Typography>
+                </Box>
                 <Box>
-                  <Typography variant="body2" fontWeight="600">
-                    {selectedEvent.start?.dateTime 
-                      ? `${format(parseISO(selectedEvent.start.dateTime), "EEEE, MMMM d")}` 
-                      : "All Day"}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {selectedEvent.start?.dateTime 
-                      ? `${format(parseISO(selectedEvent.start.dateTime), "h:mm a")} - ${format(parseISO(selectedEvent.end.dateTime), "h:mm a")}` 
-                      : "All Day"}
-                  </Typography>
+                  <IconButton size="small" onClick={handleDeleteEvent} color="error" sx={{ mr: 1 }}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" onClick={handleCloseDetails}>
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
                 </Box>
               </Box>
 
-              {selectedEvent.location && (
-                <Box sx={{ display: "flex", gap: 1.5 }}>
-                  <LocationOnIcon color="action" fontSize="small" sx={{ mt: 0.2 }} />
-                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
-                    {selectedEvent.location}
-                  </Typography>
-                </Box>
-              )}
+              <Grid container spacing={4}>
+                <Grid size={{ xs: 12, md: 7 }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <Box sx={{ display: "flex", gap: 2 }}>
+                      <AccessTimeIcon color="primary" sx={{ mt: 0.3 }} />
+                      <Box>
+                        <Typography variant="body1" fontWeight="700">
+                          {selectedEvent.start?.dateTime 
+                            ? `${format(parseISO(selectedEvent.start.dateTime), "EEEE, MMMM d, yyyy")}` 
+                            : format(parseISO(selectedEvent.start?.date || new Date().toISOString()), "EEEE, MMMM d, yyyy")}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" fontWeight="500">
+                          {selectedEvent.start?.dateTime 
+                            ? `${format(parseISO(selectedEvent.start.dateTime), "h:mm a")} - ${format(parseISO(selectedEvent.end.dateTime), "h:mm a")}` 
+                            : "All Day"}
+                        </Typography>
+                      </Box>
+                    </Box>
 
-              {selectedEvent.description && (
-                <Box sx={{ display: "flex", gap: 1.5 }}>
-                  <DescriptionIcon color="action" fontSize="small" sx={{ mt: 0.2 }} />
-                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-wrap" }}>
-                    {selectedEvent.description}
-                  </Typography>
-                </Box>
-              )}
-              
+                    {selectedEvent.location && (
+                      <Box sx={{ display: "flex", gap: 2 }}>
+                        <LocationOnIcon color="primary" sx={{ mt: 0.3 }} />
+                        <Typography variant="body1" fontWeight="500">
+                          {selectedEvent.location}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {selectedEvent.description && (
+                      <Box sx={{ display: "flex", gap: 2 }}>
+                        <DescriptionIcon color="primary" sx={{ mt: 0.3 }} />
+                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "text.secondary", lineHeight: 1.6 }}>
+                          {selectedEvent.description}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 5 }}>
+                  {selectedEvent.attendees && selectedEvent.attendees.length > 0 && (
+                    <Box>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                        <PeopleIcon fontSize="small" color="disabled" />
+                        <Typography variant="caption" fontWeight="800" color="text.disabled" sx={{ letterSpacing: 1, textTransform: 'uppercase' }}>
+                          Attendees ({selectedEvent.attendees.length})
+                        </Typography>
+                      </Box>
+                      <List disablePadding>
+                        {selectedEvent.attendees.map((attendee: any, i: number) => (
+                          <ListItem key={i} disableGutters sx={{ py: 0.8 }}>
+                            <ListItemIcon sx={{ minWidth: 36 }}>
+                              {getAttendeeIcon(attendee.responseStatus)}
+                            </ListItemIcon>
+                            <ListItemText 
+                              primary={attendee.displayName || attendee.email.split('@')[0]}
+                              secondary={attendee.displayName ? attendee.email : null}
+                              primaryTypographyProps={{ variant: 'body2', fontWeight: '600' }}
+                              secondaryTypographyProps={{ variant: 'caption' }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Box>
+                  )}
+                </Grid>
+              </Grid>
+
               {selectedEvent.htmlLink && (
-                <Box sx={{ mt: 1, textAlign: "right" }}>
-                  <Link href={selectedEvent.htmlLink} target="_blank" rel="noopener" underline="hover" variant="caption" fontWeight="600">
+                <Box sx={{ mt: 4, pt: 2, borderTop: '1px solid rgba(0,0,0,0.04)', textAlign: "center" }}>
+                  <Button 
+                    href={selectedEvent.htmlLink} 
+                    target="_blank" 
+                    rel="noopener" 
+                    variant="outlined" 
+                    size="small"
+                    sx={{ borderRadius: 100, px: 3 }}
+                  >
                     Open in Google Calendar
-                  </Link>
+                  </Button>
                 </Box>
               )}
-            </Box>
+            </DialogContent>
           </Box>
         )}
-      </Popover>
+      </Dialog>
 
       {/* Create Event Dialog */}
-      <Dialog open={isCreating} onClose={() => setIsCreating(false)} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: 3 } }}>
-        <DialogTitle sx={{ fontWeight: 700 }}>New Event</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+      <Dialog 
+        open={isCreating} 
+        onClose={() => setIsCreating(false)} 
+        fullWidth 
+        maxWidth="xs" 
+        slotProps={{
+          backdrop: {
+            sx: { backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.4)' }
+          }
+        }}
+        PaperProps={{ 
+          sx: { borderRadius: 1, p: 1, boxShadow: "0 24px 64px rgba(0,0,0,0.2)" } 
+        }}
+      >
+        <Box sx={{ p: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="h6" fontWeight="800">New Event</Typography>
+          <IconButton onClick={() => setIsCreating(false)} size="small"><CloseIcon fontSize="small" /></IconButton>
+        </Box>
+        <DialogContent sx={{ pt: 0 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
             <TextField
               label="Title"
               fullWidth
+              variant="outlined"
               value={newEvent.summary}
               onChange={(e) => setNewEvent({ ...newEvent, summary: e.target.value })}
               autoFocus
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
             />
-            <TextField
-              label="Start"
-              type="datetime-local"
-              fullWidth
-              value={newEvent.start}
-              onChange={(e) => setNewEvent({ ...newEvent, start: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="End"
-              type="datetime-local"
-              fullWidth
-              value={newEvent.end}
-              onChange={(e) => setNewEvent({ ...newEvent, end: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-            />
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <TextField
+                label="Start"
+                type="datetime-local"
+                fullWidth
+                value={newEvent.start}
+                onChange={(e) => setNewEvent({ ...newEvent, start: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+              />
+              <TextField
+                label="End"
+                type="datetime-local"
+                fullWidth
+                value={newEvent.end}
+                onChange={(e) => setNewEvent({ ...newEvent, end: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+              />
+            </Box>
             <TextField
               label="Location"
               fullWidth
               value={newEvent.location}
               onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
             />
             <TextField
               label="Description"
@@ -588,12 +688,14 @@ export default function CalendarView() {
               rows={3}
               value={newEvent.description}
               onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
             />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={() => setIsCreating(false)} color="inherit">Cancel</Button>
-          <Button onClick={handleCreateEvent} variant="contained" disabled={!newEvent.summary}>Create</Button>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button fullWidth onClick={handleCreateEvent} variant="contained" disabled={!newEvent.summary} size="large" sx={{ py: 1.5, borderRadius: 3 }}>
+            Create Event
+          </Button>
         </DialogActions>
       </Dialog>
     </Paper>
