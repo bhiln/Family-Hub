@@ -48,7 +48,12 @@ export async function GET() {
         });
 
         if (tasksResponse.data.items) {
-          allTasks.push(...tasksResponse.data.items);
+          const tasksWithListId = tasksResponse.data.items.map(t => ({
+            ...t,
+            taskListId: list.id, // Attach the list ID
+            accountId: account.id // Attach the internal account ID
+          }));
+          allTasks.push(...tasksWithListId);
         }
       }
     } catch (error) {

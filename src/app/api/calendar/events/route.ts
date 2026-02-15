@@ -63,6 +63,7 @@ export async function GET() {
         // 3. Attach calendar color if event color is missing
         const eventsWithColors = response.data.items.map((event) => ({
           ...event,
+          accountId: account.id, // Attach internal account ID for operations
           calendarColor: calendarColors["primary"] || calendarColors[event.organizer?.email || ""] || "#4285F4" 
         }));
         allEvents.push(...eventsWithColors);

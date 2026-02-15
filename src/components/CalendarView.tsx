@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { 
   Paper, Typography, Box, List, ListItem, ListItemText, ListItemButton,
-  IconButton, Grid, useTheme, Divider, Popover, Link, ButtonBase
+  IconButton, Grid, useTheme, Divider, Popover, Link, ButtonBase,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -11,6 +12,8 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import DescriptionIcon from "@mui/icons-material/Description";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { 
   format, parseISO, isSameDay, startOfMonth, endOfMonth, 
   startOfWeek, endOfWeek, eachDayOfInterval, addMonths, 
@@ -28,30 +31,84 @@ export default function CalendarView() {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
-  useEffect(() => {
-    async function fetchEvents() {
-      try {
-        const res = await fetch("/api/calendar/events");
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          const seen = new Set();
-          const uniqueEvents = data.filter(event => {
-            const start = event.start?.dateTime || event.start?.date;
-            const key = `${event.id}-${start}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-          setEvents(uniqueEvents);
-        }
-      } catch (error) {
-        console.error("Failed to fetch events", error);
-      } finally {
-        setLoading(false);
+  // Create Event state
+  const [isCreating, setIsCreating] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    summary: "",
+    start: "",
+    end: "",
+    description: "",
+    location: ""
+  });
+
+  async function fetchEvents() {
+    try {
+      const res = await fetch("/api/calendar/events");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const seen = new Set();
+        const uniqueEvents = data.filter(event => {
+          const start = event.start?.dateTime || event.start?.date;
+          const key = `${event.id}-${start}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setEvents(uniqueEvents);
       }
+    } catch (error) {
+      console.error("Failed to fetch events", error);
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     fetchEvents();
   }, []);
+
+  const handleCreateEvent = async () => {
+    if (!newEvent.summary || !newEvent.start || !newEvent.end) return;
+
+    // Convert local datetime-local string to full ISO string for API
+    const formatToISO = (dateStr: string) => new Date(dateStr).toISOString();
+
+    try {
+      const res = await fetch("/api/calendar/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newEvent,
+          start: formatToISO(newEvent.start),
+          end: formatToISO(newEvent.end)
+        }),
+      });
+      if (res.ok) {
+        setIsCreating(false);
+        setNewEvent({ summary: "", start: "", end: "", description: "", location: "" });
+        fetchEvents();
+      }
+    } catch (error) {
+      console.error("Failed to create event", error);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent) return;
+    if (!confirm("Delete this event?")) return;
+
+    try {
+      const res = await fetch(`/api/calendar/delete?eventId=${selectedEvent.id}&accountId=${selectedEvent.accountId || ""}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        handleClosePopover();
+        fetchEvents();
+      }
+    } catch (error) {
+      console.error("Failed to delete event", error);
+    }
+  };
 
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth));
@@ -168,16 +225,41 @@ export default function CalendarView() {
             </Box>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, bgcolor: "rgba(0,0,0,0.03)", borderRadius: 100, p: 0.5 }}>
-            <IconButton size="small" onClick={handlePrevMonth}>
-              <ChevronLeftIcon fontSize="small" />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <IconButton 
+              size="small" 
+              onClick={() => {
+                const now = new Date();
+                const start = new Date(selectedDate);
+                start.setHours(now.getHours() + 1, 0, 0, 0);
+                const end = new Date(start);
+                end.setHours(start.getHours() + 1);
+                
+                setNewEvent({
+                  summary: "",
+                  start: start.toISOString().slice(0, 16), // Format for datetime-local
+                  end: end.toISOString().slice(0, 16),
+                  description: "",
+                  location: ""
+                });
+                setIsCreating(true);
+              }}
+              sx={{ bgcolor: "rgba(0,0,0,0.03)" }}
+            >
+              <AddIcon fontSize="small" />
             </IconButton>
-            <Typography variant="caption" fontWeight="600" sx={{ minWidth: 80, textAlign: "center", textTransform: "uppercase", letterSpacing: 0.5 }}>
-              {format(currentMonth, "MMMM")}
-            </Typography>
-            <IconButton size="small" onClick={handleNextMonth}>
-              <ChevronRightIcon fontSize="small" />
-            </IconButton>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, bgcolor: "rgba(0,0,0,0.03)", borderRadius: 100, p: 0.5 }}>
+              <IconButton size="small" onClick={handlePrevMonth}>
+                <ChevronLeftIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="caption" fontWeight="600" sx={{ minWidth: 80, textAlign: "center", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {format(currentMonth, "MMMM")}
+              </Typography>
+              <IconButton size="small" onClick={handleNextMonth}>
+                <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Box>
           </Box>
         </Box>
 
@@ -391,11 +473,16 @@ export default function CalendarView() {
       >
         {selectedEvent && (
           <Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: getEventColor(selectedEvent) }} />
-              <Typography variant="h6" fontWeight="700" sx={{ lineHeight: 1.2 }}>
-                {selectedEvent.summary}
-              </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: getEventColor(selectedEvent) }} />
+                <Typography variant="h6" fontWeight="700" sx={{ lineHeight: 1.2 }}>
+                  {selectedEvent.summary}
+                </Typography>
+              </Box>
+              <IconButton size="small" onClick={handleDeleteEvent} color="error">
+                <DeleteIcon fontSize="small" />
+              </IconButton>
             </Box>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
@@ -444,6 +531,56 @@ export default function CalendarView() {
           </Box>
         )}
       </Popover>
+
+      {/* Create Event Dialog */}
+      <Dialog open={isCreating} onClose={() => setIsCreating(false)} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>New Event</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+            <TextField
+              label="Title"
+              fullWidth
+              value={newEvent.summary}
+              onChange={(e) => setNewEvent({ ...newEvent, summary: e.target.value })}
+              autoFocus
+            />
+            <TextField
+              label="Start"
+              type="datetime-local"
+              fullWidth
+              value={newEvent.start}
+              onChange={(e) => setNewEvent({ ...newEvent, start: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="End"
+              type="datetime-local"
+              fullWidth
+              value={newEvent.end}
+              onChange={(e) => setNewEvent({ ...newEvent, end: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Location"
+              fullWidth
+              value={newEvent.location}
+              onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+            />
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              rows={3}
+              value={newEvent.description}
+              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setIsCreating(false)} color="inherit">Cancel</Button>
+          <Button onClick={handleCreateEvent} variant="contained" disabled={!newEvent.summary}>Create</Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 }
