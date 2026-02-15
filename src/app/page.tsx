@@ -7,6 +7,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import CalendarView from "@/components/CalendarView";
 import TodoView from "@/components/TodoView";
 import Navbar from "@/components/Navbar";
+import VoiceAgent from "@/components/VoiceAgent";
 import { useState } from "react";
 
 export default function Home() {
@@ -65,6 +66,7 @@ export default function Home() {
           </Grid>
         </Grid>
       </Box>
+      <VoiceAgent />
     </Box>
   );
 }

@@ -21,8 +21,14 @@ export async function POST(request: Request) {
 
     const event: any = {
       summary,
-      start: { dateTime: start },
-      end: { dateTime: end },
+      start: { 
+        dateTime: start,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+      },
+      end: { 
+        dateTime: end,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+      },
     };
     
     if (description) event.description = description;

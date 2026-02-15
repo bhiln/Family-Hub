@@ -17,10 +17,24 @@ export default function TodoView() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [lastUpdatedId, setLastUpdatedId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchTasks();
+
+    const handleAIUpdate = (e: any) => {
+      if (e.detail.type === 'task') {
+        if (e.detail.id) {
+          setLastUpdatedId(e.detail.id);
+          setTimeout(() => setLastUpdatedId(null), 3000); // Reset after animation
+        }
+        fetchTasks();
+      }
+    };
+
+    window.addEventListener('hub-ai-update', handleAIUpdate);
+    return () => window.removeEventListener('hub-ai-update', handleAIUpdate);
   }, []);
 
   useEffect(() => {
@@ -210,7 +224,17 @@ export default function TodoView() {
         ) : (
           <List sx={{ pt: 0 }}>
             {tasks.map((task, index) => (
-              <Box key={task.id} sx={{ "&:hover .delete-btn": { opacity: 1 } }}>
+              <Box 
+                key={task.id} 
+                className={lastUpdatedId === task.id ? "ai-updated" : ""}
+                sx={{ 
+                  "&:hover .delete-btn": { opacity: 1 },
+                  borderRadius: 1,
+                  mx: 1,
+                  mb: 0.5,
+                  transition: "all 0.3s ease"
+                }}
+              >
                 <ListItem 
                   sx={{ 
                     px: 3, 

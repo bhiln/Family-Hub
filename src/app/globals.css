@@ -24,3 +24,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes ai-glow {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); border-color: rgba(124, 58, 237, 0.5); }
+  50% { box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.6); border-color: rgba(124, 58, 237, 0.8); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); border-color: rgba(0, 0, 0, 0.02); }
+}
+
+.ai-updated {
+  animation: ai-glow 2s ease-in-out;
+}

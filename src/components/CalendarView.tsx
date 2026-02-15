@@ -33,6 +33,7 @@ export default function CalendarView() {
 
   // Create Event state
   const [isCreating, setIsCreating] = useState(false);
+  const [lastUpdatedId, setLastUpdatedId] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState({
     summary: "",
     start: "",
@@ -65,6 +66,19 @@ export default function CalendarView() {
 
   useEffect(() => {
     fetchEvents();
+
+    const handleAIUpdate = (e: any) => {
+      if (e.detail.type === 'calendar') {
+        if (e.detail.id) {
+          setLastUpdatedId(e.detail.id);
+          setTimeout(() => setLastUpdatedId(null), 3000);
+        }
+        fetchEvents();
+      }
+    };
+
+    window.addEventListener('hub-ai-update', handleAIUpdate);
+    return () => window.removeEventListener('hub-ai-update', handleAIUpdate);
   }, []);
 
   const handleCreateEvent = async () => {
@@ -408,7 +422,8 @@ export default function CalendarView() {
                   <ListItem 
                     key={event.id + idx}
                     disablePadding
-                    sx={{ mb: 1.5 }}
+                    className={lastUpdatedId === event.id ? "ai-updated" : ""}
+                    sx={{ mb: 1.5, borderRadius: 1, overflow: 'hidden' }}
                   >
                     <ListItemButton
                       onClick={(e) => handleEventClick(event, e.currentTarget)}
